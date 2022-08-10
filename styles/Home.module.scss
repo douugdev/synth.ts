@@ -1,0 +1,56 @@
+@use 'sass:math';
+
+.container {
+  padding: 0 2rem;
+}
+
+.main {
+  min-height: 100vh;
+  padding: 4rem 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.piano {
+  display: flex;
+  flex-direction: row;
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none; /* Safari */
+  -khtml-user-select: none; /* Konqueror HTML */
+  -moz-user-select: none; /* Old versions of Firefox */
+  -ms-user-select: none; /* Internet Explorer/Edge */
+  user-select: none; /* Non-prefixed version, currently
+                                supported by Chrome, Edge, Opera and Firefox */
+  cursor: pointer;
+}
+
+.key {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  border: 0.1rem solid black;
+
+  &Black {
+    @extend .key;
+    width: 1rem;
+    height: 5rem;
+    margin-right: -0.6rem;
+    margin-left: -0.6rem;
+    background-color: black;
+    color: white;
+    z-index: 1;
+  }
+  &White {
+    @extend .key;
+    width: 1.5rem;
+    height: 8.5rem;
+    background-color: white;
+  }
+
+  p {
+    transform: rotate(270deg);
+  }
+}

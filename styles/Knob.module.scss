@@ -1,0 +1,18 @@
+.knob {
+  position: relative;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 0.3rem solid black;
+  border-top-color: red;
+  border-radius: 999999px;
+  cursor: grab;
+}
+
+.handle {
+  position: absolute;
+  width: 1.5rem;
+  left: -0.2rem;
+  top: 1.1rem;
+  background-color: black;
+  height: 0.3rem;
+}
