@@ -1,10 +1,12 @@
 import type { NextPage } from 'next';
 import Head from 'next/head';
-import { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import styles from '../styles/Home.module.scss';
 import PITCHES from 'data/notes';
 import Knob from 'components/Knob';
 import { getWaveFunction, normaliseWave } from 'utils/waves';
+
+type WaveFunction = (timeDomain: number) => number | Array<number>;
 
 const NOTES = [
   'D',
@@ -38,30 +40,47 @@ const C_SCALE = [
 
 export const SAMPLE_RATE = 44100;
 
-const Synth: NextPage = () => {
-  const [knobValue, setKnobValue] = useState<number>(50);
-  // const [waveform, setWaveform] = useState<'square'>
+const triangleWave: WaveFunction = (t) => {
+  return Math.abs(((2 * t + 0.5) % 2) - 1) * 1 - 0.5;
+};
 
+const squareWave: WaveFunction = (t) => {
+  return Math.sign(Math.sin(2 * Math.PI * t));
+};
+
+const sineWave: WaveFunction = (t) => {
+  return Math.sin(2 * Math.PI * t);
+};
+
+const waves = {
+  sine: sineWave,
+  square: squareWave,
+  triangle: triangleWave,
+};
+
+const Synth: NextPage = () => {
+  const [volume, setVolume] = useState<number>(50);
   const audioContext = useMemo(() => {
     const context = new AudioContext();
 
     return context;
   }, []);
 
+  const [wave, setWave] = useState<'triangle' | 'sine' | 'square'>('sine');
+
+  const handleWaveChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const target = e.target;
+    if (target.checked) {
+      setWave(target.value as typeof wave);
+    }
+  };
+
   const playSoundWave = ({
-    wave = (t) => {
-      // return Math.sin(2 * Math.PI * t); // Senoidal
-
-      // return Math.sin(2 * Math.PI * t) !== 0
-      //   ? 1 * Math.sign(Math.sin(2 * Math.PI * t)) // Quadrada
-      //   : 0;
-
-      return Math.abs(((2 * t + 0.5) % 2) - 1) * 1 - 0.5; // Triangulo
-    },
+    wave = sineWave,
     note = 'A',
     octave = 3,
   }: {
-    wave?: (num: number) => number | Array<number>;
+    wave?: WaveFunction;
     note?: typeof NOTES[number];
     octave?: number;
   }) => {
@@ -71,7 +90,7 @@ const Synth: NextPage = () => {
         return;
       }
     }
-    const baseVolume = 0.8 * (knobValue / 100);
+    const baseVolume = 0.8 * (volume / 100);
     const decay = 2;
     const freq = PITCHES[(note + octave) as keyof typeof PITCHES];
     if (wave.constructor === Array) {
@@ -118,12 +137,45 @@ const Synth: NextPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main className={styles.main}>
-        <div>Current waveform: TRIANGLE WAVE</div>
+        <div>Current waveform:</div>
         <div>
-          {knobValue}
+          <div>
+            <input
+              onChange={handleWaveChange}
+              type="radio"
+              value="sine"
+              name="wave"
+              checked={wave === 'sine'}
+            />
+            Sine
+          </div>
+          <div>
+            <input
+              onChange={handleWaveChange}
+              type="radio"
+              value="triangle"
+              name="wave"
+              checked={wave === 'triangle'}
+            />
+            Triangle
+          </div>
+          <div>
+            <input
+              onChange={handleWaveChange}
+              type="radio"
+              value="square"
+              name="wave"
+              checked={wave === 'square'}
+            />
+            Square
+          </div>
+        </div>
+
+        <div>
+          Volume: {volume}
           <Knob
-            value={knobValue}
-            setValue={setKnobValue}
+            value={volume}
+            setValue={setVolume}
             maxValue={100}
             minValue={0}
           />
@@ -135,9 +187,11 @@ const Synth: NextPage = () => {
             const isBlackKey = note.at(-1) === '#';
             return (
               <div
+                key={`key_${index}`}
                 className={isBlackKey ? styles.keyBlack : styles.keyWhite}
                 onMouseDown={() =>
                   playSoundWave({
+                    wave: waves[wave],
                     note,
                     octave: Math.floor(Math.min(index + 2, 88) / 12),
                   })
