@@ -1,6 +1,6 @@
 import type { NextPage } from 'next';
 import Head from 'next/head';
-import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import styles from '../styles/Home.module.scss';
 import { MdOutlinePiano } from 'react-icons/md';
 import {
@@ -8,10 +8,9 @@ import {
   PiWaveSineBold,
   PiWaveSquareBold,
 } from 'react-icons/pi';
-import Knob from 'components/Knob';
-import * as Tone from 'tone';
 import { Midi } from '@tonejs/midi';
 import Piano, { NoteWithOctave } from 'components/Piano';
+import * as Tone from 'tone';
 
 const Synth: NextPage = () => {
   const volumeId = useId();
