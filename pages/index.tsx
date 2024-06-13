@@ -1,72 +1,46 @@
 import type { NextPage } from 'next';
 import Head from 'next/head';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import styles from '../styles/Home.module.scss';
-import PITCHES from 'data/notes';
+import { MdOutlinePiano } from 'react-icons/md';
+import {
+  PiWaveTriangleBold,
+  PiWaveSineBold,
+  PiWaveSquareBold,
+} from 'react-icons/pi';
 import Knob from 'components/Knob';
-import { getWaveFunction, normaliseWave } from 'utils/waves';
-
-type WaveFunction = (timeDomain: number) => number | Array<number>;
-
-const NOTES = [
-  'D',
-  'D#',
-  'E',
-  'F',
-  'F#',
-  'G',
-  'G#',
-  'A',
-  'A#',
-  'B',
-  'C',
-  'C#',
-] as const;
-
-const C_SCALE = [
-  'C',
-  'C#',
-  'D',
-  'D#',
-  'E',
-  'F',
-  'F#',
-  'G',
-  'G#',
-  'A',
-  'A#',
-  'B',
-];
-
-export const SAMPLE_RATE = 44100;
-
-const triangleWave: WaveFunction = (t) => {
-  return Math.abs(((2 * t + 0.5) % 2) - 1) * 1 - 0.5;
-};
-
-const squareWave: WaveFunction = (t) => {
-  return Math.sign(Math.sin(2 * Math.PI * t));
-};
-
-const sineWave: WaveFunction = (t) => {
-  return Math.sin(2 * Math.PI * t);
-};
-
-const waves = {
-  sine: sineWave,
-  square: squareWave,
-  triangle: triangleWave,
-};
+import * as Tone from 'tone';
+import { Midi } from '@tonejs/midi';
+import Piano, { NoteWithOctave } from 'components/Piano';
 
 const Synth: NextPage = () => {
-  const [volume, setVolume] = useState<number>(50);
-  const audioContext = useMemo(() => {
-    const context = new AudioContext();
+  const volumeId = useId();
+  const sineId = useId();
+  const squareId = useId();
+  const triangleId = useId();
+  const pianoId = useId();
 
-    return context;
-  }, []);
+  const [volume, setVolume] = useState<string>('-15');
+  const [midi, setMidi] = useState<Midi>();
+  const synth = useRef(new Tone.PolySynth(Tone.Synth).toDestination());
 
-  const [wave, setWave] = useState<'triangle' | 'sine' | 'square'>('sine');
+  const sampler = useRef(
+    new Tone.Sampler({
+      urls: {
+        C4: 'C4.mp3',
+        'D#4': 'Ds4.mp3',
+        'F#4': 'Fs4.mp3',
+        A4: 'A4.mp3',
+      },
+      release: 1,
+      baseUrl: 'https://tonejs.github.io/audio/salamander/',
+      volume: -10,
+    }).toDestination()
+  );
+
+  const [wave, setWave] = useState<'triangle' | 'sine' | 'square' | 'piano'>(
+    'sine'
+  );
 
   const handleWaveChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const target = e.target;
@@ -75,59 +49,101 @@ const Synth: NextPage = () => {
     }
   };
 
-  const playSoundWave = ({
-    wave = sineWave,
-    note = 'A',
-    octave = 3,
-  }: {
-    wave?: WaveFunction;
-    note?: typeof NOTES[number];
-    octave?: number;
-  }) => {
-    if (Array.isArray(wave)) {
-      if (wave.length == 0) {
-        // Do nothing if we have a nothing-lengthed wave.
+  const playSoundWave = (note: NoteWithOctave) => {
+    switch (wave) {
+      case 'piano':
+        sampler.current.triggerAttackRelease(note, 1);
+        break;
+      case 'sine':
+        synth.current.set({
+          oscillator: {
+            type: 'sine',
+          },
+          envelope: { decay: 0.5, release: 0.5 },
+        });
+        synth.current.triggerAttackRelease(note, 0.25);
+        break;
+      case 'triangle':
+        synth.current.set({
+          oscillator: {
+            type: 'triangle',
+          },
+          envelope: { decay: 0.5, release: 0.5 },
+        });
+        synth.current.triggerAttackRelease(note, 0.25);
+        break;
+      case 'square':
+        synth.current.set({
+          oscillator: {
+            type: 'square',
+          },
+          envelope: { decay: 0.5, release: 0.5 },
+        });
+        synth.current.triggerAttackRelease(note, 0.25);
+        break;
+    }
+  };
+
+  const playMidi = () => {
+    const now = Tone.now() + 0.5;
+    midi?.tracks.forEach((track) => {
+      //create a synth for each track
+      // const synth = new Tone.PolySynth(Tone.Synth).toDestination();
+      synth.current.set({
+        envelope: {
+          attack: 0.02,
+          decay: 0.1,
+          sustain: 0.3,
+          release: 1,
+        },
+      });
+      // synths.push(synth);
+      if (track.instrument.percussion) {
         return;
       }
-    }
-    const baseVolume = 0.8 * (volume / 100);
-    const decay = 2;
-    const freq = PITCHES[(note + octave) as keyof typeof PITCHES];
-    if (wave.constructor === Array) {
-      // transform our wave array into a function we can call
-      wave = getWaveFunction(normaliseWave(wave));
-    }
-
-    if (audioContext === null) {
-      return false;
-    }
-
-    const buffer = audioContext.createBuffer(1, SAMPLE_RATE, SAMPLE_RATE);
-
-    const channel = buffer.getChannelData(0);
-    for (let i = 0; i < buffer.length; i++) {
-      // Where we are in the sound, in seconds.
-      const t = i / SAMPLE_RATE;
-      // The waves are visually at a very low frequency, we need to bump that up a bunch
-      channel[i] += Array.isArray(wave) ? wave[freq * t] : wave(freq * t);
-    }
-    const source = audioContext.createBufferSource();
-    source.buffer = buffer;
-
-    const gainNode = audioContext.createGain();
-
-    gainNode.gain.setValueAtTime(baseVolume, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(
-      0.0001,
-      audioContext.currentTime + decay
-    );
-
-    source.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-
-    source.start();
-    source.stop(audioContext.currentTime + decay);
+      //schedule all of the events
+      track.notes.forEach((note) => {
+        if (note.duration <= 0) {
+          return;
+        }
+        if (wave === 'piano') {
+          if (note && note.name)
+            sampler.current.triggerAttackRelease(
+              note.name,
+              note.duration,
+              note.time + now,
+              note.velocity
+            );
+        } else {
+          synth.current.triggerAttackRelease(
+            note.name,
+            note.duration,
+            note.time + now,
+            note.velocity
+          );
+        }
+      });
+    });
   };
+
+  useEffect(() => {
+    if (!volume) {
+      return;
+    }
+    const parsedVolume = parseInt(volume);
+
+    if (Number.isNaN(parsedVolume) || !Number.isFinite(parsedVolume)) {
+      return;
+    }
+
+    synth.current.set({
+      volume: parsedVolume,
+    });
+    sampler.current.set({
+      volume: parsedVolume,
+    });
+    console.log();
+  }, [sampler, synth, volume]);
 
   return (
     <div className={styles.container}>
@@ -137,73 +153,132 @@ const Synth: NextPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main className={styles.main}>
-        <div>Current waveform:</div>
-        <div>
-          <div>
-            <input
-              onChange={handleWaveChange}
-              type="radio"
-              value="sine"
-              name="wave"
-              checked={wave === 'sine'}
-            />
-            Sine
-          </div>
-          <div>
-            <input
-              onChange={handleWaveChange}
-              type="radio"
-              value="triangle"
-              name="wave"
-              checked={wave === 'triangle'}
-            />
-            Triangle
-          </div>
-          <div>
-            <input
-              onChange={handleWaveChange}
-              type="radio"
-              value="square"
-              name="wave"
-              checked={wave === 'square'}
-            />
-            Square
-          </div>
-        </div>
-
-        <div>
-          Volume: {volume}
-          <Knob
-            value={volume}
-            setValue={setVolume}
-            maxValue={100}
-            minValue={0}
-          />
-        </div>
-
-        <div className={styles.piano}>
-          {[...Array(88)].map((_, index) => {
-            const note = NOTES[index % NOTES.length];
-            const isBlackKey = note.at(-1) === '#';
-            return (
-              <div
-                key={`key_${index}`}
-                className={isBlackKey ? styles.keyBlack : styles.keyWhite}
-                onMouseDown={() =>
-                  playSoundWave({
-                    wave: waves[wave],
-                    note,
-                    octave: Math.floor(Math.min(index + 2, 88) / 12),
-                  })
-                }
-              >
-                <p>
-                  {NOTES[index % NOTES.length] +
-                    Math.floor(Math.min(index + 2, 88) / 12)}
-                </p>
+        <div className={styles.ui}>
+          <div className={styles.waveformContainer}>
+            <h2>Waveform/Sample</h2>
+            <div className={styles.inputsContainer}>
+              <div>
+                <input
+                  id={sineId}
+                  onChange={handleWaveChange}
+                  type="radio"
+                  value="sine"
+                  name="wave"
+                  checked={wave === 'sine'}
+                />
+                <label htmlFor={sineId}>
+                  <PiWaveSineBold />
+                  Sine
+                </label>
               </div>
-            );
-          })}
+              <div>
+                <input
+                  id={triangleId}
+                  onChange={handleWaveChange}
+                  type="radio"
+                  value="triangle"
+                  name="wave"
+                  checked={wave === 'triangle'}
+                />
+                <label htmlFor={triangleId}>
+                  <PiWaveTriangleBold /> Triangle
+                </label>
+              </div>
+              <div>
+                <input
+                  id={squareId}
+                  onChange={handleWaveChange}
+                  type="radio"
+                  value="square"
+                  name="wave"
+                  checked={wave === 'square'}
+                />
+                <label htmlFor={squareId}>
+                  <PiWaveSquareBold /> Square
+                </label>
+              </div>
+              <div>
+                <input
+                  id={pianoId}
+                  onChange={handleWaveChange}
+                  type="radio"
+                  value="piano"
+                  name="wave"
+                  checked={wave === 'piano'}
+                />
+                <label htmlFor={pianoId}>
+                  <MdOutlinePiano /> Piano
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.midiInputContainer}>
+            <div className={styles.boxInput}>
+              <input
+                className={styles.boxFile}
+                type="file"
+                name="files[]"
+                id="file"
+                accept=".mid,.midi"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    file.arrayBuffer().then((midiData) => {
+                      setMidi(new Midi(midiData));
+                    });
+                  }
+                }}
+              />
+              <label htmlFor="file">
+                {midi ? (
+                  <strong>Midi loaded</strong>
+                ) : (
+                  <strong>Choose a file</strong>
+                )}
+              </label>
+            </div>
+            <button
+              disabled={!midi}
+              className={styles.play}
+              onClick={() => playMidi()}
+            >
+              Play MIDI
+            </button>
+          </div>
+
+          <div className={styles.volume}>
+            <label htmlFor={volumeId}>Volume</label>
+            <div className={styles.fakeInput}>
+              <input
+                id={volumeId}
+                type="text"
+                value={volume}
+                onChange={(e) => {
+                  const parsedText = e.target.value.replaceAll(/[^0-9\-]/g, '');
+                  const parsedVolume = parseInt(parsedText);
+
+                  if (Number.isNaN(parsedVolume)) {
+                    return setVolume(parsedText);
+                  }
+
+                  if (parsedVolume >= 0) {
+                    return setVolume('-0');
+                  }
+
+                  if (parsedVolume < -100) {
+                    return setVolume('-100');
+                  }
+
+                  setVolume(parsedText);
+                }}
+              />
+              dB
+            </div>
+          </div>
+        </div>
+        <div className={styles.piano}>
+          <Piano onPressDown={(note) => playSoundWave(note)} />
         </div>
       </main>
     </div>
