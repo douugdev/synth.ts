@@ -5,6 +5,8 @@
   cursor: pointer;
   width: 100%;
   height: 100%;
+  perspective: 1000px;
+  perspective-origin: 50% 50%;
 }
 
 .key {
@@ -22,9 +24,12 @@
 
     &Black {
       position: relative;
+      transform: translateZ(10px);
+      z-index: 100;
     }
     &White {
       position: relative;
+
       flex: 1;
       margin: 0px 1px;
     }
@@ -35,7 +40,13 @@
     position: absolute;
     height: 8rem;
     width: calc(100vw / 33);
-    background-color: rgb(104, 68, 48);
+    box-shadow: rgba(0, 0, 0, 0.25) 0px 5px 15px;
+
+    background: linear-gradient(
+      180deg,
+      rgba(116, 89, 67, 1) 40%,
+      rgb(94, 66, 51) 100%
+    );
     z-index: 1;
     transform: translateX(-50%);
     &:active {
@@ -45,8 +56,14 @@
   }
   &White {
     @extend .key;
+    transform: translateZ(-100px);
+
     height: 12rem;
-    background-color: rgba(255, 210, 167, 0.322);
+    background: linear-gradient(
+      180deg,
+      rgba(194, 176, 161, 0.4) 40%,
+      rgba(163, 135, 112, 0.4) 100%
+    );
     &:active {
       transition: background-color 50ms ease-in-out;
       background-color: rgba(51, 23, 8, 0.432);

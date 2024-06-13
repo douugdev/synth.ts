@@ -1,6 +1,6 @@
 import type { NextPage } from 'next';
 import Head from 'next/head';
-import React, { useEffect, useId, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import styles from '../styles/Home.module.scss';
 import { MdOutlinePiano } from 'react-icons/md';
 import {
@@ -45,8 +45,37 @@ const Synth: NextPage = () => {
     const target = e.target;
     if (target.checked) {
       setWave(target.value as typeof wave);
+      changeWaveform(target.value as typeof wave);
     }
   };
+
+  const changeWaveform = useCallback((waveForm: typeof wave) => {
+    switch (waveForm) {
+      case 'piano':
+        break;
+      case 'sine':
+        synth.current.set({
+          oscillator: {
+            type: 'sine',
+          },
+        });
+        break;
+      case 'triangle':
+        synth.current.set({
+          oscillator: {
+            type: 'triangle',
+          },
+        });
+        break;
+      case 'square':
+        synth.current.set({
+          oscillator: {
+            type: 'square',
+          },
+        });
+        break;
+    }
+  }, []);
 
   const playSoundWave = (note: NoteWithOctave) => {
     switch (wave) {
@@ -54,49 +83,16 @@ const Synth: NextPage = () => {
         sampler.current.triggerAttackRelease(note, 1);
         break;
       case 'sine':
-        synth.current.set({
-          oscillator: {
-            type: 'sine',
-          },
-          envelope: { decay: 0.5, release: 0.5 },
-        });
-        synth.current.triggerAttackRelease(note, 0.25);
-        break;
       case 'triangle':
-        synth.current.set({
-          oscillator: {
-            type: 'triangle',
-          },
-          envelope: { decay: 0.5, release: 0.5 },
-        });
-        synth.current.triggerAttackRelease(note, 0.25);
-        break;
       case 'square':
-        synth.current.set({
-          oscillator: {
-            type: 'square',
-          },
-          envelope: { decay: 0.5, release: 0.5 },
-        });
         synth.current.triggerAttackRelease(note, 0.25);
         break;
     }
   };
 
   const playMidi = () => {
-    const now = Tone.now() + 0.5;
+    const now = Tone.now();
     midi?.tracks.forEach((track) => {
-      //create a synth for each track
-      // const synth = new Tone.PolySynth(Tone.Synth).toDestination();
-      synth.current.set({
-        envelope: {
-          attack: 0.02,
-          decay: 0.1,
-          sustain: 0.3,
-          release: 1,
-        },
-      });
-      // synths.push(synth);
       if (track.instrument.percussion) {
         return;
       }
@@ -141,8 +137,19 @@ const Synth: NextPage = () => {
     sampler.current.set({
       volume: parsedVolume,
     });
-    console.log();
   }, [sampler, synth, volume]);
+
+  useEffect(() => {
+    changeWaveform('sine');
+    synth.current.set({
+      envelope: {
+        attack: 0.02,
+        decay: 0.5,
+        sustain: 0.5,
+        release: 1,
+      },
+    });
+  }, [changeWaveform]);
 
   return (
     <div className={styles.container}>
@@ -152,6 +159,13 @@ const Synth: NextPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main className={styles.main}>
+        <div className={styles.title}>
+          <h1>synth.ts</h1>
+          <h2>
+            A simple synthesizer built with <strong>React</strong> and{' '}
+            <strong>TypeScript</strong>
+          </h2>
+        </div>
         <div className={styles.ui}>
           <div className={styles.waveformContainer}>
             <h2>Waveform/Sample</h2>
@@ -196,6 +210,7 @@ const Synth: NextPage = () => {
                   <PiWaveSquareBold /> Square
                 </label>
               </div>
+              <hr />
               <div>
                 <input
                   id={pianoId}

@@ -20,12 +20,77 @@
   justify-content: center;
   align-items: center;
 
+  .title {
+    position: absolute;
+    top: 2rem;
+
+    @keyframes droph1 {
+      from {
+        filter: blur(10px);
+        translate: 0 -5rem;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    h1 {
+      animation: droph1 1s ease-in-out;
+
+      text-align: center;
+      font-size: 52pt;
+      font-weight: 800;
+      background: linear-gradient(
+        180deg,
+        rgba(116, 89, 67, 0.4) 40%,
+        rgb(20, 16, 14, 0.4) 100%
+      );
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0;
+    }
+
+    @keyframes droph2 {
+      from {
+        filter: blur(5px);
+        translate: 0 -3rem;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    h2 {
+      opacity: 0;
+      animation: 850ms droph2 150ms ease-out forwards;
+
+      text-align: center;
+
+      font-weight: 500;
+      font-size: 12pt;
+      background: linear-gradient(
+        180deg,
+        rgba(116, 89, 67, 0.7) 40%,
+        rgb(20, 16, 14, 0.4) 100%
+      );
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+  }
+
   .ui {
     display: flex;
     flex-direction: row;
+    align-items: center;
     gap: 5rem;
     .waveformContainer {
       .inputsContainer {
+        hr {
+          filter: opacity(0.2);
+          border-color: #e2caac;
+        }
         div {
           display: flex;
           flex-direction: row;
@@ -47,20 +112,20 @@
           display: grid;
           place-content: center;
           appearance: none;
-          background-color: #fff;
+          background-color: #f3dcc1;
           margin: 0;
           font: inherit;
           color: currentColor;
           width: 1.15em;
           height: 1.15em;
-          border: 0.15em solid currentColor;
+          border: 0.15em solid rgba(165, 135, 106, 0.692);
           border-radius: 50%;
         }
 
         input[type='radio']::before {
           content: '';
-          width: 0.65em;
-          height: 0.65em;
+          width: 0.55em;
+          height: 0.55em;
           border-radius: 50%;
           transform: scale(0);
           transition: 120ms transform ease-in-out;
@@ -141,11 +206,11 @@
         border-radius: 0.5rem;
         background-color: rgb(189, 149, 112);
         font-family: Montserrat;
-        font-weight: bold;
+        font-weight: 400;
         left: 1rem;
         top: 0;
         transform: translateY(-50%);
-        padding: 0rem 0.5rem;
+        padding: 0rem 0.6rem;
       }
 
       input {
@@ -171,12 +236,15 @@
       }
     }
   }
+  perspective: 1000px;
+  perspective-origin: 50% 50%;
 
   .piano {
     position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    bottom: 0.5rem;
+    left: 50%;
+    transform: translateX(-50%) rotateX(20deg);
+    max-width: 80rem;
     width: 100%;
   }
 }
