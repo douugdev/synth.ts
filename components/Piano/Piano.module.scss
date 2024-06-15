@@ -50,10 +50,6 @@
     );
     z-index: 1;
     transform: translateX(-50%);
-    &:active {
-      transition: background-color 50ms ease-in-out;
-      background-color: rgba(51, 23, 8, 1);
-    }
   }
   &White {
     @extend .key;
@@ -64,13 +60,13 @@
       rgba(194, 176, 161, 0.4) 40%,
       rgba(163, 135, 112, 0.4) 100%
     );
-    &:active {
-      transition: background-color 50ms ease-in-out;
-      background-color: rgba(51, 23, 8, 0.432);
-    }
   }
 
   p {
     transform: rotate(270deg);
   }
+}
+
+.pressing:hover {
+  filter: brightness(0.7);
 }

@@ -1,9 +1,11 @@
+import { useEffect } from 'react';
 import styles from './Piano.module.scss';
 
 type PianoProps = {
+  isPressing?: boolean;
   onPress?: (note: NoteWithOctave) => void;
-  onPressDown?: (note: NoteWithOctave) => void;
-  onPressUp?: (note: NoteWithOctave) => void;
+  onMouseEnter?: (note: NoteWithOctave) => void;
+  onMouseLeave?: (note: NoteWithOctave) => void;
 };
 
 type CScaleProps = {
@@ -42,7 +44,13 @@ export const C_SCALE = [
   'B',
 ] as const;
 
-const CScale = ({ octave, onPress, onPressDown, onPressUp }: CScaleProps) => {
+const CScale = ({
+  octave,
+  onPress,
+  onMouseEnter,
+  onMouseLeave,
+  isPressing,
+}: CScaleProps) => {
   return (
     <>
       {C_SCALE.map((note) => {
@@ -51,15 +59,17 @@ const CScale = ({ octave, onPress, onPressDown, onPressUp }: CScaleProps) => {
         return (
           <div
             key={note + octave}
-            className={
+            className={`${isPressing ? styles.pressing : ''} ${
               isBlackKey ? styles.keyContainerBlack : styles.keyContainerWhite
-            }
+            }`}
           >
             <div
               className={isBlackKey ? styles.keyBlack : styles.keyWhite}
-              onClick={() => onPress?.(noteWithOctave)}
-              onMouseDown={() => onPressDown?.(noteWithOctave)}
-              onMouseUp={() => onPressUp?.(noteWithOctave)}
+              onClick={() => isPressing && onPress?.(noteWithOctave)}
+              onMouseDown={() => onMouseEnter?.(noteWithOctave)}
+              onMouseEnter={() => isPressing && onMouseEnter?.(noteWithOctave)}
+              onMouseLeave={() => onMouseLeave?.(noteWithOctave)}
+              onMouseUp={() => onMouseLeave?.(noteWithOctave)}
             >
               <p>{note + octave}</p>
             </div>

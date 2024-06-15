@@ -7,21 +7,25 @@ import {
   PiWaveTriangleBold,
   PiWaveSineBold,
   PiWaveSquareBold,
+  PiWaveSawtoothBold,
 } from 'react-icons/pi';
 import { Midi } from '@tonejs/midi';
 import Piano, { NoteWithOctave } from 'components/Piano';
 import * as Tone from 'tone';
 
 const Synth: NextPage = () => {
+  Tone.setContext(new Tone.Context({ latencyHint: 'interactive' }));
   const volumeId = useId();
   const sineId = useId();
   const squareId = useId();
   const triangleId = useId();
+  const sawtoothId = useId();
   const pianoId = useId();
 
   const [volume, setVolume] = useState<string>('-15');
   const [midi, setMidi] = useState<Midi>();
   const synth = useRef(new Tone.PolySynth(Tone.Synth).toDestination());
+  const [isPressing, setIsPressing] = useState<boolean>(false);
 
   const sampler = useRef(
     new Tone.Sampler({
@@ -37,9 +41,9 @@ const Synth: NextPage = () => {
     }).toDestination()
   );
 
-  const [wave, setWave] = useState<'triangle' | 'sine' | 'square' | 'piano'>(
-    'sine'
-  );
+  const [wave, setWave] = useState<
+    'triangle' | 'sine' | 'square' | 'sawtooth' | 'piano'
+  >('sine');
 
   const handleWaveChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const target = e.target;
@@ -74,6 +78,13 @@ const Synth: NextPage = () => {
           },
         });
         break;
+      case 'sawtooth':
+        synth.current.set({
+          oscillator: {
+            type: 'sawtooth',
+          },
+        });
+        break;
     }
   }, []);
 
@@ -85,7 +96,22 @@ const Synth: NextPage = () => {
       case 'sine':
       case 'triangle':
       case 'square':
-        synth.current.triggerAttackRelease(note, 0.25);
+      case 'sawtooth':
+        synth.current.triggerAttack(note, '+0.05');
+        break;
+    }
+  };
+
+  const stopSoundWave = (note: NoteWithOctave) => {
+    console.log('up', note);
+    switch (wave) {
+      case 'piano':
+        break;
+      case 'sine':
+      case 'triangle':
+      case 'square':
+      case 'sawtooth':
+        synth.current.triggerRelease(note, '+0.05');
         break;
     }
   };
@@ -152,7 +178,11 @@ const Synth: NextPage = () => {
   }, [changeWaveform]);
 
   return (
-    <div className={styles.container}>
+    <div
+      className={styles.container}
+      onMouseDown={() => setIsPressing(true)}
+      onMouseUp={() => setIsPressing(false)}
+    >
       <Head>
         <title>Synth</title>
         <meta name="description" content="Just a synthesizer" />
@@ -208,6 +238,19 @@ const Synth: NextPage = () => {
                 />
                 <label htmlFor={squareId}>
                   <PiWaveSquareBold /> Square
+                </label>
+              </div>
+              <div>
+                <input
+                  id={sawtoothId}
+                  onChange={handleWaveChange}
+                  type="radio"
+                  value="sawtooth"
+                  name="wave"
+                  checked={wave === 'sawtooth'}
+                />
+                <label htmlFor={sawtoothId}>
+                  <PiWaveSawtoothBold /> Sawtooth
                 </label>
               </div>
               <hr />
@@ -292,7 +335,11 @@ const Synth: NextPage = () => {
           </div>
         </div>
         <div className={styles.piano}>
-          <Piano onPressDown={(note) => playSoundWave(note)} />
+          <Piano
+            isPressing={isPressing}
+            onMouseEnter={(note) => playSoundWave(note)}
+            onMouseLeave={(note) => stopSoundWave(note)}
+          />
         </div>
       </main>
     </div>
