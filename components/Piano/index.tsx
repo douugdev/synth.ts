@@ -81,7 +81,7 @@ const CScale = ({
 };
 
 const AllScales = new Array(3).fill(0).map((_, index) => {
-  return index + 3;
+  return index + 2;
 });
 const Piano = (props: PianoProps) => {
   return (

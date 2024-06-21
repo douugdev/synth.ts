@@ -15,6 +15,7 @@ import * as Tone from 'tone';
 
 const Synth: NextPage = () => {
   Tone.setContext(new Tone.Context({ latencyHint: 'interactive' }));
+
   const volumeId = useId();
   const sineId = useId();
   const squareId = useId();
@@ -182,6 +183,9 @@ const Synth: NextPage = () => {
       className={styles.container}
       onMouseDown={() => setIsPressing(true)}
       onMouseUp={() => setIsPressing(false)}
+      onClick={async () => {
+        await Tone.start();
+      }}
     >
       <Head>
         <title>Synth</title>
