@@ -28,6 +28,16 @@ const Synth: NextPage = () => {
   const synth = useRef(new Tone.PolySynth(Tone.Synth).toDestination());
   const [isPressing, setIsPressing] = useState<boolean>(false);
 
+  const silentSampler = useRef(
+    new Tone.Sampler({
+      urls: {
+        C4: 'C4.mp3',
+      },
+      release: 1,
+      volume: -100,
+    })
+  );
+
   const sampler = useRef(
     new Tone.Sampler({
       urls: {
@@ -89,7 +99,9 @@ const Synth: NextPage = () => {
     }
   }, []);
 
-  const playSoundWave = (note: NoteWithOctave) => {
+  const playSoundWave = async (note: NoteWithOctave) => {
+    Tone.start();
+    silentSampler.current.triggerAttackRelease('C4', 1);
     switch (wave) {
       case 'piano':
         sampler.current.triggerAttackRelease(note, 1);
@@ -104,7 +116,6 @@ const Synth: NextPage = () => {
   };
 
   const stopSoundWave = (note: NoteWithOctave) => {
-    console.log('up', note);
     switch (wave) {
       case 'piano':
         break;
@@ -183,9 +194,6 @@ const Synth: NextPage = () => {
       className={styles.container}
       onMouseDown={() => setIsPressing(true)}
       onMouseUp={() => setIsPressing(false)}
-      onClick={async () => {
-        await Tone.start();
-      }}
     >
       <Head>
         <title>Synth</title>
